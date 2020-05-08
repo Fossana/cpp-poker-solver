@@ -41,14 +41,14 @@ bool IsActionValid_Raise(const Action& raiseAction, const GameTree::GameState& s
 {
 	const GameTree::PlayerState& activePlayer = state.GetActivePlayer();
 
-	int numChipsBeingCommitted = raiseAction.amount() - activePlayer.chipsCommitted();
-	int raiseSize = numChipsBeingCommitted - state.GetActivePlayerCallAmount();
+	int numChipsPotentiallyBeingCommitted = raiseAction.amount() - activePlayer.chipsCommitted();
+	int raiseSize = numChipsPotentiallyBeingCommitted - state.GetActivePlayerCallAmount();
 
 	return	state.GetActivePlayerCallAmount() > 0 &&
 			raiseSize > 0 && (
 				raiseSize >= state.minimumRaiseSize() &&
-				numChipsBeingCommitted <= activePlayer.stack() ||
-				numChipsBeingCommitted == activePlayer.stack()
+				numChipsPotentiallyBeingCommitted <= activePlayer.stack() ||
+				numChipsPotentiallyBeingCommitted == activePlayer.stack()
 			);
 }
 

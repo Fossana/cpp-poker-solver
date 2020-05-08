@@ -27,6 +27,7 @@ private:
 	std::vector<Action> GenerateAllPossibleRaiseActionsForActivePlayer(const GameState& state);
 	const std::vector<double>& GetBetSizes(const Street street, const PlayerId id);
 	const std::vector<double>& GetRaiseSizes(const Street street, const PlayerId id);
+	bool TerminalNodeIsNext(const GameState& state);
 
 	TreeBuildSettings treeBuildSettings;
 };

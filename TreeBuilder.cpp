@@ -94,7 +94,7 @@ std::vector<Action> TreeBuilder::GenerateAllPossibleBetActionsForActivePlayer(co
 		{
 			betAmount = activePlayer.stack();
 		}
-		else if ((double)betAmount / activePlayer.stack() >= treeBuildSettings.allinThreshold())
+		else if ((double) (betAmount / activePlayer.stack()) >= treeBuildSettings.allinThreshold())
 		{
 			betAmount = activePlayer.stack();
 		}
@@ -120,28 +120,28 @@ std::vector<Action> TreeBuilder::GenerateAllPossibleRaiseActionsForActivePlayer(
 	const PlayerState& activePlayer = state.GetActivePlayer();
 	const std::vector<double>& raiseSizes = GetRaiseSizes(state.street(), activePlayer.id());
 	std::set<int> raiseAmounts;
-	int numChipsInStackAtStartOfRound = activePlayer.stack() + activePlayer.chipsCommitted();
+	int stackAtStartOfRound = activePlayer.stack() + activePlayer.chipsCommitted();
 
 	for (double raiseSize : raiseSizes)
 	{
-		int raiseAmount =	(int) (
-								activePlayer.chipsCommitted() +
-								state.GetActivePlayerCallAmount() +
-								raiseSize * (state.pot() + state.GetActivePlayerCallAmount())
-							);
+		int totalChipsCommittedAfterRaise =	(int) (
+												activePlayer.chipsCommitted() +
+												state.GetActivePlayerCallAmount() +
+												raiseSize * (state.pot() + state.GetActivePlayerCallAmount())
+											);
 
-		if (raiseAmount > numChipsInStackAtStartOfRound)
+		if (totalChipsCommittedAfterRaise > stackAtStartOfRound)
 		{
-			raiseAmount = numChipsInStackAtStartOfRound;
+			totalChipsCommittedAfterRaise = stackAtStartOfRound;
 		}
-		else if ((double)raiseAmount / numChipsInStackAtStartOfRound >= treeBuildSettings.allinThreshold())
+		else if ((double) (totalChipsCommittedAfterRaise / stackAtStartOfRound) >= treeBuildSettings.allinThreshold())
 		{
-			raiseAmount = numChipsInStackAtStartOfRound;
+			totalChipsCommittedAfterRaise = stackAtStartOfRound;
 		}
 
-		if (raiseAmount <= numChipsInStackAtStartOfRound)
+		if (totalChipsCommittedAfterRaise <= stackAtStartOfRound)
 		{
-			raiseAmounts.insert(raiseAmount);
+			raiseAmounts.insert(totalChipsCommittedAfterRaise);
 		}
 	}
 
@@ -153,6 +153,13 @@ std::vector<Action> TreeBuilder::GenerateAllPossibleRaiseActionsForActivePlayer(
 	return retval;
 }
 
+bool TreeBuilder::TerminalNodeIsNext(const GameState& state)
+{
+	return	state.BothPlayersAreAllin() ||
+			state.EitherPlayerHasFolded() ||
+			state.street() == Street::RIVER;
+}
+
 void TreeBuilder::BuildActionNodeHelper(std::shared_ptr<ActionNode>& actionNode, const GameState& state, const Action& action)
 {
 	GameState nextState(state);
@@ -160,9 +167,7 @@ void TreeBuilder::BuildActionNodeHelper(std::shared_ptr<ActionNode>& actionNode,
 
 	if (nextState.currentRoundHasCompleted())
 	{
-		if (nextState.BothPlayersAreAllin() ||
-			nextState.EitherPlayerHasFolded() ||
-			nextState.street() == Street::RIVER)
+		if (TerminalNodeIsNext(nextState))
 		{
 			std::shared_ptr<TerminalNode> child = BuildTerminalNode(actionNode, nextState);
 			actionNode->AddChild(action, std::move(child));
@@ -221,12 +226,12 @@ std::shared_ptr<TerminalNode> TreeBuilder::BuildTerminalNode(std::shared_ptr<Nod
 	{
 		terminalNode = std::make_shared<TerminalNode>(move(parent), TerminalNodeType::NON_SHOWDOWN, state.pot(), lastToAct);
 	}
-	else
+	else // showdown
 	{
 		terminalNode = std::make_shared<TerminalNode>(move(parent), TerminalNodeType::SHOWDOWN, state.pot(), lastToAct);
 	}
 
-	return move(terminalNode);
+	return std::move(terminalNode);
 }
 
 const std::vector<double>& TreeBuilder::GetBetSizes(const Street street, const PlayerId id)
